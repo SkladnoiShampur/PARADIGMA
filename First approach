@@ -1,0 +1,4 @@
+from collections import Counter
+
+частота = Counter(['яблоко', 'банан', 'яблоко', 'груша', 'банан', 'апельсин'])
+print(частота)
