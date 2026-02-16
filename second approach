@@ -1,0 +1,11 @@
+def cf(elements):
+    fr = {}
+    for el in elements:
+        if el in fr:
+            fr[el] += 1
+        else:
+            fr[el] = 1
+    return fr
+
+res = cf(['яблоко', 'банан', 'яблоко', 'груша', 'банан', 'апельсин'])
+print(res)
