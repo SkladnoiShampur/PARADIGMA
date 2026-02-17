@@ -1,4 +1,38 @@
+## Ошкодер Сергей Александрович НБИБД-01-24 16.02.2026
+## Анализ временной сложности алгоритма подсчёта частоты элементов
+
+import time
 from collections import Counter
 
-частота = Counter(['яблоко', 'банан', 'яблоко', 'груша', 'банан', 'апельсин'])
-print(частота)
+## Подсчёт с помощью Counter
+def test_counter(data):
+    start = time.time()
+    Counter(data)
+    return time.time() - start
+
+
+## Подсчёт с помощью обычного списка
+def test_dict(data):
+    start = time.time()
+    freq = {}
+    for item in data:
+        freq[item] = freq.get(item, 0) + 1
+    return time.time() - start
+
+## Размер тестовых данных
+sizes = [10000, 20000, 40000, 1000000, 10000000]
+results_counter = []
+results_dict = []
+
+for size in sizes:
+    data = [str(i % 100) for i in range(size)]  ## Тестовые данные
+    results_counter.append(test_counter(data))
+    results_dict.append(test_dict(data))
+
+print(results_counter, '\n', results_dict)
+
+##print("Введите строку")
+##fr = input().rstrip('\n')
+##fr = list(map(str, input().split()))
+##res = Counter(fr)
+##print(res)
