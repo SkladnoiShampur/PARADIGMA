@@ -1,0 +1,86 @@
+## Ошкодер Сергей Александрович НБИБд-01-24 23.02.2026
+## Построение массива префиксных сумм (#21)
+
+import sys
+import time
+
+def build_prefix_sum(arr):
+    """Строим массив префиксных сумм для заданного массива."""
+    start = time.time()
+    n = len(arr)
+    if n == 0:
+        return [], 0, 0
+
+    prefix = [0] * n
+    prefix[0] = arr[0]
+
+    for i in range(1, n):
+        prefix[i] = prefix[i - 1] + arr[i]
+
+    execution_time = time.time() - start
+    memory_usage = sys.getsizeof(prefix) + sys.getsizeof(arr)
+    return prefix, execution_time, memory_usage
+
+def sum_in_range(prefix, l, r):
+    """Вычисляем сумму элементов на отрезке [l, r] за O(1)."""
+    if l == 0:
+        return prefix[r]
+    else:
+        return prefix[r] - prefix[l - 1]
+
+# Исходный массив
+arr = list(map(int, input("Введите числа через пробел: ").split()))
+# arr = [1, 3, -2, 8, 5]
+
+# Строим префиксные суммы
+prefix, build_time, memory_used = build_prefix_sum(arr)
+print("Исходный массив:", arr)
+print("Префиксные суммы:", prefix)
+print(f"Время построения префиксных сумм: {build_time:.6f} сек")
+print(f"Занятая память: {memory_used} байт")
+
+# Выполняем запросы
+print("Сумма [0, 2]:", sum_in_range(prefix, 0, 2))  # 1 + 3 + (-2) = 2
+print("Сумма [1, 3]:", sum_in_range(prefix, 1, 3))  # 3 + (-2) + 8 = 9
+print("Сумма [2, 4]:", sum_in_range(prefix, 2, 4))  # (-2) + 8 + 5 = 11
+
+# Анализ временной сложности
+sizes = [1000, 5000, 10000, 20000, 40000, 80000, 160000]
+execution_times = []
+theoretical_complexity = []
+
+# Анализ пространственной сложности
+memory_usages = []
+theoretical_memory = []
+
+print("\n")
+print("АНАЛИЗ ВРЕМЕННОЙ И ПРОСТРАНСТВЕННОЙ СЛОЖНОСТИ")
+
+for size in sizes:
+    # Создаём тестовые данные (числа от 0 до 99)
+    data = [i % 100 for i in range(size)]
+
+    # Измеряем время построения префиксных сумм и занимаемую память
+    _, exec_time, mem_usage = build_prefix_sum(data)
+    execution_times.append(exec_time)
+    memory_usages.append(mem_usage)
+
+    # Теоретическая сложность O(n) — нормируем относительно минимального размера
+    base_size = sizes[0]
+    theoretical_time = (size / base_size) * execution_times[0]
+    theoretical_complexity.append(theoretical_time)
+
+    # Теоретическая пространственная сложность O(n)
+    theoretical_mem = (size / base_size) * memory_usages[0]
+    theoretical_memory.append(theoretical_mem)
+
+    print(f"Размер: {size:6d} | Время: {exec_time:8.6f} сек | "
+          f"Теоретическое: {theoretical_time:8.6f} сек | "
+          f"Память: {mem_usage:8d} байт | "
+          f"Теоретическая: {theoretical_mem:8.0f} байт")
+
+print("\nВЫВОД:")
+print(f"Экспериментально измеренная сложность близка к O(n), "
+      f"так как время выполнения растёт примерно пропорционально размеру данных.")
+print(f"Экспериментально измеренная пространственная сложность близка к O(n), "
+      f"так как занимаемая память растёт примерно пропорционально размеру данных.")
