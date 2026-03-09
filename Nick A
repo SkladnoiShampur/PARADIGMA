@@ -1,0 +1,23 @@
+# Словари
+emergency_numbers = {
+    "112": "единый номер",
+    "101": "пожарная охрана и органы МЧС",
+    "102": "полиция",
+    "103": "скорая медицинская помощь",
+    "104": "аварийная газовая служба"
+}
+
+user_input = input("Опишите ситуацию: ")
+
+# Никита натурал
+
+if "пожар" in user_input.lower() or "горит" in user_input.lower():
+    print(f"Позвоните на номер: {emergency_numbers['101']} ({'101'})")
+elif "кража" in user_input.lower() or "грабёж" in user_input.lower() or "полиция" in user_input.lower():
+    print(f"Позвоните на номер: {emergency_numbers['102']} ({'102'})")
+elif "помощь" in user_input.lower() and ("боль" in user_input.lower() or "травма" in user_input.lower()):
+    print(f"Позвоните на номер: {emergency_numbers['103']} ({'103'})")
+elif "газ" in user_input.lower() or "утечка" in user_input.lower():
+    print(f"Позвоните на номер: {emergency_numbers['104']} ({'104'})")
+else:
+    print(f"В случае опасности звоните на единый номер: {emergency_numbers['112']} ({'112'})")
