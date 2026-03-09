@@ -1,0 +1,36 @@
+import os
+import pandas as pd
+
+filename = 'data.json'
+if os.path.exists(filename):
+    try:
+        df = pd.read_json(filename)
+        print("Файл загружен успешно!")
+    except ValueError as e:
+        print(f"Ошибка при чтении JSON: {e}")
+else:
+    print(f"Файл {filename} не найден!")
+
+print(df.columns)
+print(df['events_data'].head())  
+print(type(df['events_data'].iloc))  
+
+# Загрузка данных
+df = pd.read_json('data.json')
+
+# Проверка структуры
+print(df['events_data'].head())
+print(type(df['events_data'].iloc))
+
+# Нормализация вложенных данных
+df = pd.json_normalize(df['events_data'])
+
+# Проверка столбцов
+print(df.columns)
+
+# Фильтрация (если 'category' есть)
+if 'category' in df.columns:
+    page_actions = df[df['category'] == 'page']
+    print(f"Найдено {len(page_actions)} действий с category='page'")
+else:
+    print("Столбец 'category' не найден!")
