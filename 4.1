@@ -1,0 +1,23 @@
+import time
+import random
+import copy
+
+def test_time_complexity():
+    sizes = [10, 100, 1000, 5000, 10000]
+    print(f"{'n':<10} {'Heap sort (сек)':<20} {'Merge sort (сек)':<20}")
+    for n in sizes:
+        arr = [random.randint(1, 10000) for _ in range(n)]
+        
+        # Heap sort
+        arr_copy = copy.deepcopy(arr)
+        start = time.time()
+        heap_sort(arr_copy)  # используем вашу функцию
+        heap_time = time.time() - start
+        
+        # Merge sort
+        arr_copy = copy.deepcopy(arr)
+        start = time.time()
+        merge_sort(arr_copy)
+        merge_time = time.time() - start
+        
+        print(f"{n:<10} {heap_time:<20.6f} {merge_time:<20.6f}")
