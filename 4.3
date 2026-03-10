@@ -1,0 +1,8 @@
+import tracemalloc
+
+def measure_memory_heap(arr):
+    tracemalloc.start()
+    heap_sort(copy.deepcopy(arr))
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    print(f"Heap sort: пиковая память = {peak / 1024:.2f} КБ")
