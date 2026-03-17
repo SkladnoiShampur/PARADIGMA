@@ -1,0 +1,41 @@
+import math
+
+def additional_work(arr, left, right):
+    """
+    Функция, выполняющая дополнительную работу за O(log n).
+    Здесь n = right - left + 1 — длина текущего подмассива.
+    Работа заключается в выполнении цикла, число итераций которого
+    пропорционально двоичному логарифму от n. На каждой итерации
+    вычисляется логарифм текущего значения счётчика.
+    """
+    n = right - left + 1
+    i = n
+    while i > 0:
+        # Константная операция: вычисление логарифма (или любое другое действие)
+        math.log(i)  # логарифм от i (можно заменить на любую операцию O(1))
+        i //= 2      # уменьшаем i вдвое — всего будет ~log2(n) итераций
+
+def modified_binary_search(arr, left, right, target):
+    """
+    Модифицированный бинарный поиск.
+    На каждом уровне рекурсии выполняется дополнительная работа O(log n).
+    """
+    if left >= right:
+        return -1  # элемент не найден
+
+    mid = (left + right) // 2
+
+    # Дополнительная работа O(log n) на текущем подмассиве
+    additional_work(arr, left, right)
+
+    if arr[mid] == target:
+        return mid
+    elif arr[mid] > target:
+        return modified_binary_search(arr, left, mid, target)
+    else:
+        return modified_binary_search(arr, mid + 1, right, target)
+
+# Пример использования
+arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+result = modified_binary_search(arr, 0, len(arr) - 1, 5)
+print("Индекс элемента:", result)  # Выведет: Индекс элемента: 4 (индексация с 0)
