@@ -1,0 +1,38 @@
+import numpy as np
+
+n = int(input("Введите количество строк (n): "))
+m = int(input("Введите количество столбцов (m): "))
+
+A = np.random.randint(1, 100, size=(n, m))
+print("Сформированная матрица:")
+print(A)
+
+min_index = np.argmin(A)
+
+row_index = min_index // m
+col_index = min_index % m
+
+print(f"Минимальный элемент {A[row_index, col_index]} находится в строке с индексом {row_index}")
+
+if row_index < n - 1:
+  A = np.insert(A, row_index + 1, A[0, :], axis = 0)
+else:
+  A = np.append(A, [A[0, :]], axis=0)
+
+print ("Матрица после вставки первой строки:")
+print(A)
+
+first_row = A[0, :]
+median_numpy = np.median(first_row)
+print(f"Медиана первой строки: {median_numpy}")
+
+sorted_row = np.sort(first_row)
+n = len(sorted_row)
+
+if n%2 == 1:
+  median = sorted_row[n//2]
+else:
+  mid1 = n//2 - 1
+  mid2 = n//2
+  median = (sorted_row[mid1] + sorted_row[mid2]) / 2
+print(f"Медиана (вручную): {median}")
