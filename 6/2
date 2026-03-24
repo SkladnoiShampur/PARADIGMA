@@ -1,0 +1,114 @@
+## Ошкодер Сергей Александрович НБИБд-01-24 20.03.2026 (5)
+## Вставить в пустое AVL ключи [10, 30, 20, 5, 15, 25, 35]
+## Функция должна обрабатывать все 4 случая: LL, RR, LR, RL
+## После каждой вставки выводить структуру дерева
+
+class TreeNode:
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+        self.height = 1
+
+
+def get_height(node):
+    if not node:
+        return 0
+    return node.height
+
+
+def get_balance(node):
+    if not node:
+        return 0
+    return get_height(node.right) - get_height(node.left)
+
+
+def update_height(node):
+    node.height = 1 + max(get_height(node.left), get_height(node.right))
+
+
+# Right Rotate
+def right_rotate(y):
+
+    x = y.left # x - новый корень
+    T2 = x.right # сохраняем в Т2 правое поддерево х
+
+    x.right = y # y - новый правый потомок х
+    y.left = T2 # Т2 - новый левый потомок у
+
+    update_height(y) 
+    update_height(x)
+
+    return x  
+
+
+# Left Rotate
+def left_rotate(x):
+
+    y = x.right # у - новый корень
+    T2 = y.left # сохраняем в Т2 левое поддерево y
+
+    y.left = x # x - новый левый потомок у
+    x.right = T2 # Т2 - новый правый потомок x
+
+    update_height(x)
+    update_height(y)
+
+    return y  
+
+
+def balance(node):
+    update_height(node)
+
+    balance_factor = get_balance(node)
+
+    # LL случай — левое поддерево выше и левый потомок сбалансирован или перевешен влево (правый поворот)
+    if balance_factor < -1 and get_balance(node.left) <= 0:
+        return right_rotate(node)
+
+    # RR случай — Правое поддерево выше и правый потомок сбаласирован или перевешен вправо (левый поворот)
+    if balance_factor > 1 and get_balance(node.right) >= 0:
+        return left_rotate(node)
+
+    # LR случай — левое поддерево выше, но левый потомок перевешен вправо
+    if balance_factor < -1 and get_balance(node.left) > 0:
+        node.left = left_rotate(node.left)
+        return right_rotate(node)
+
+    # RL случай — правое поддерево выше, но правый потомок перевешен вправо
+    if balance_factor > 1 and get_balance(node.right) < 0:
+        node.right = right_rotate(node.right)
+        return left_rotate(node)
+
+    return node
+
+
+def insert(node, key):
+    if not node:
+        return TreeNode(key)
+    elif key < node.key:
+        node.left = insert(node.left, key)
+    else:
+        node.right = insert(node.right, key)
+
+    return balance(node)
+
+
+def inorder_traversal(root):
+    result = []
+    if root:
+        result.extend(inorder_traversal(root.left))
+        result.append(root.key)
+        result.extend(inorder_traversal(root.right))
+    return result
+
+
+if __name__ == "__main__":
+    root = None
+    keys = [10, 30, 20, 5, 15, 25, 35]
+
+    for key in keys:
+        root = insert(root, key)
+        print(f"После вставки {key}: {inorder_traversal(root)}")
+
+    print("Итоговое дерево (inorder):", inorder_traversal(root))
