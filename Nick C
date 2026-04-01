@@ -1,0 +1,22 @@
+import pandas as pd
+
+data = pd.read_csv('StudentsPerformance.csv')
+
+mean_reading_score = data['reading score'].mean()
+print(f"Среднее значение по чтению: {mean_reading_score}")
+
+below_average = data['reading score'] < mean_reading_score
+
+count_below_average = below_average.sum()
+print(f"Количество абитуриентов с оценкой ниже среднего: {count_below_average}")
+
+# Функция-шифровальщик
+def shuffle_halves(text):
+    length = len(text)
+    midpoint = length // 2  
+    first_half = text[:midpoint]  
+    second_half = text[midpoint:]  
+    return second_half + first_half  
+
+data['crypted'] = data['test preparation course'].apply(lambda x: shuffle_halves(x))
+print(data[['test preparation course', 'crypted']].head())
