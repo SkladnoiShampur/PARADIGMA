@@ -1,0 +1,107 @@
+/*
+ * Лабораторная работа: приведение типов (upcasting / downcasting) в ООП.
+ * Иерархия: Animal -> Dog, Cat, Bird
+ * Для dynamic_cast базовый класс должен быть полиморфным — добавлен виртуальный деструктор.
+ */
+
+// --- Вопрос 38. Что такое upcasting и downcasting? ---
+// Upcasting — приведение указателя/ссылки от производного класса к базовому (Dog* -> Animal*).
+// Оно типично для полиморфизма и выполняется неявно там, где это безопасно по иерархии.
+// Downcasting — приведение от базового к производному (Animal* -> Dog*). Оно допустимо
+// только если объект в динамике действительно имеет нужный подтип; иначе поведение
+// неопределённо при static_cast или nullptr / исключение при dynamic_cast.
+
+// --- Вопрос 39. Зачем проверять тип перед downcasting? ---
+// Указатель Animal* может указывать на любой подкласс. Без проверки можно ошибочно
+// трактовать объект Cat как Dog, что приведёт к неопределённому поведению при static_cast
+// или к обращению к "чужой" части объекта. dynamic_cast проверяет тип во время выполнения.
+
+// --- Вопрос 40. Что такое instanceof в Java и dynamic_cast в C++? ---
+// В Java instanceof проверяет, принадлежит ли объект к данному классу/интерфейсу (runtime).
+// В C++ dynamic_cast для указателей в полиморфной иерархии возвращает nullptr, если
+// приведение невозможно; для ссылок бросает std::bad_cast — это аналог "безопасной проверки".
+
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+class Animal {
+public:
+    virtual ~Animal() = default;
+    virtual void makeSound() const = 0;
+};
+
+class Dog : public Animal {
+public:
+    void makeSound() const override { std::cout << "Гав!\n"; }
+    void fetch() const { std::cout << "Собака приносит палку.\n"; }
+};
+
+class Cat : public Animal {
+public:
+    void makeSound() const override { std::cout << "Мяу!\n"; }
+    void purr() const { std::cout << "Кошка мурлычет.\n"; }
+};
+
+class Bird : public Animal {
+public:
+    void makeSound() const override { std::cout << "Чирик!\n"; }
+    void fly() const { std::cout << "Птица летит.\n"; }
+};
+
+int main() {
+    // Контейнер (аналог массива Animal[]) с объектами подклассов
+    std::vector<std::unique_ptr<Animal>> zoo;
+    zoo.push_back(std::make_unique<Dog>());
+    zoo.push_back(std::make_unique<Cat>());
+    zoo.push_back(std::make_unique<Bird>());
+
+    std::cout << "--- Полиморфный вызов makeSound() ---\n";
+    for (const auto& a : zoo) {
+        a->makeSound();
+    }
+
+    std::cout << "\n--- Upcasting: Dog* -> Animal* (неявно и явно) ---\n";
+    Dog reks;
+    // Неявное приведение адреса производного к указателю на базовый (безопасно)
+    Animal* a1 = &reks;
+    a1->makeSound();
+
+    // Явное static_cast к базовому (эквивалентно в данном случае)
+    Animal* a2 = static_cast<Animal*>(&reks);
+    a2->makeSound();
+
+    std::cout << "\n--- Безопасный downcasting: dynamic_cast ---\n";
+    Animal* a = &reks;
+    if (Dog* d = dynamic_cast<Dog*>(a)) {
+        d->fetch(); // приведение успешно — указатель не nullptr
+    }
+    if (dynamic_cast<Cat*>(a) != nullptr) {
+        // Не выполнится: a указывает на Dog, не Cat
+    } else {
+        std::cout << "(Cat*) отсутствует — объект не кошка, ветка пропущена.\n";
+    }
+
+    std::cout << "\n--- Некорректное приведение: dynamic_cast возвращает nullptr ---\n";
+    Cat murzik;
+    Animal* b = &murzik;
+    if (Dog* bad = dynamic_cast<Dog*>(b)) {
+        bad->fetch();
+    } else {
+        std::cout << "dynamic_cast<Dog*>(b) == nullptr — нельзя трактовать Cat как Dog.\n";
+    }
+
+    std::cout << "\n--- Небезопасный static_cast (UB при неверном типе) vs исключение у dynamic_cast для ссылок ---\n";
+    // static_cast<Dog&>(*b) было бы неопределённым поведением — демонстрировать вызов не будем.
+    try {
+        // Для ссылок dynamic_cast бросает std::bad_cast, если тип не совпадает
+        Dog& dref = dynamic_cast<Dog&>(*b);
+        (void)dref;
+    } catch (const std::bad_cast& e) {
+        std::cout << "Поймано: std::bad_cast — " << e.what() << "\n";
+    }
+
+    return 0;
+}
