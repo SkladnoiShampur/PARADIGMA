@@ -1,0 +1,106 @@
+/*
+ * Лабораторная работа: приведение типов (upcasting / downcasting) в ООП.
+ * Иерархия: Animal -> Dog, Cat, Bird
+ */
+
+// --- Вопрос 38. Что такое upcasting и downcasting? ---
+// Upcasting (восходящее приведение) — это приведение ссылки/указателя от производного типа
+// к базовому (например, Dog -> Animal). Оно естественно для наследования и обычно неявное
+// в Java: объект "как бы рассматривается" через интерфейс базового класса.
+// Downcasting (нисходящее приведение) — приведение от базового типа к производному
+// (Animal -> Dog). Оно не всегда корректно: переменная типа Animal может указывать
+// на Cat, Bird и т.д., поэтому перед downcast нужна проверка реального типа объекта.
+
+// --- Вопрос 39. Зачем проверять тип перед downcasting? ---
+// Ссылка типа Animal может указывать на любой подкласс. Если реальный объект — Cat,
+// а мы приведём ссылку к Dog и вызовем методы Dog, JVM выбросит ClassCastException.
+// Проверка (instanceof) гарантирует, что приведение соответствует фактическому классу объекта.
+
+// --- Вопрос 40. Что такое instanceof в Java и dynamic_cast в C++? ---
+// instanceof в Java — оператор времени выполнения: возвращает true, если объект
+// является экземпляром указанного класса или его подкласса (с учётом иерархии).
+// dynamic_cast в C++ — оператор приведения указателей/ссылок в полиморфной иерархии
+// (нужна хотя бы одна виртуальная функция в базе). Для указателей при ошибке возвращает
+// nullptr; для ссылок бросает std::bad_cast — это способ безопасно узнать реальный тип.
+
+abstract class Animal {
+    abstract void makeSound();
+}
+
+class Dog extends Animal {
+    @Override
+    void makeSound() {
+        System.out.println("Гав!");
+    }
+
+    void fetch() {
+        System.out.println("Собака приносит палку.");
+    }
+}
+
+class Cat extends Animal {
+    @Override
+    void makeSound() {
+        System.out.println("Мяу!");
+    }
+
+    void purr() {
+        System.out.println("Кошка мурлычет.");
+    }
+}
+
+class Bird extends Animal {
+    @Override
+    void makeSound() {
+        System.out.println("Чирик!");
+    }
+
+    void fly() {
+        System.out.println("Птица летит.");
+    }
+}
+
+public class LabCastingJava {
+    public static void main(String[] args) {
+        // Массив Animal с объектами подклассов (полиморфная коллекция)
+        Animal[] zoo = new Animal[3];
+        zoo[0] = new Dog();
+        zoo[1] = new Cat();
+        zoo[2] = new Bird();
+
+        System.out.println("--- Полиморфный вызов makeSound() для всех элементов ---");
+        for (Animal a : zoo) {
+            a.makeSound(); // виртуальное поведение: вызывается реализация подкласса
+        }
+
+        System.out.println("\n--- Upcasting: Dog -> Animal ---");
+        Dog reks = new Dog();
+        // Неявное приведение: подкласс всегда "помещается" в базовый тип (безопасно)
+        Animal a1 = reks;
+        a1.makeSound(); // ожидаемо: "Гав!" — реальный объект Dog
+
+        // Явное приведение (в Java для ссылок на объекты чаще избыточно, но допустимо)
+        Animal a2 = (Animal) reks;
+        a2.makeSound();
+
+        System.out.println("\n--- Безопасный downcasting с instanceof ---");
+        Animal a = reks;
+        if (a instanceof Dog) {
+            // После проверки можно безопасно привести к Dog и вызвать специфичный метод
+            ((Dog) a).fetch(); // результат: OK
+        }
+        if (a instanceof Cat) {
+            // Не выполнится: реальный объект — Dog, не Cat
+            ((Cat) a).purr();
+        }
+
+        System.out.println("\n--- Некорректный downcasting: ClassCastException ---");
+        Animal b = new Cat();
+        try {
+            // Cat нельзя использовать как Dog: при принудительном приведении JVM бросит исключение
+            ((Dog) b).fetch();
+        } catch (ClassCastException ex) {
+            System.out.println("Поймано: ClassCastException — " + ex.getMessage());
+        }
+    }
+}
