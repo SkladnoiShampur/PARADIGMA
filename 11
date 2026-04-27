@@ -1,0 +1,85 @@
+# Лабораторная работа: генераторный пайплайн обработки данных
+# Условие:
+# 1) source_gen(start, step) — бесконечная арифметическая прогрессия
+# 2) filter_gen(gen, predicate) — фильтрация
+# 3) map_gen(gen, func) — трансформация
+# 4) take_while_gen(gen, predicate) — берёт элементы, пока условие истинно
+# 5) batch_gen(gen, size) — группирует элементы по size
+#
+# Требуется собрать пайплайн:
+# pipeline = batch_gen(
+#     filter_gen(map_gen(source_gen(1, 1), lambda x: x**2), lambda x: x % 3 == 0),
+#     5
+# )
+# И вывести первые 3 пачки.
+#
+# Ограничение: использовать только генераторы (yield), не накапливать данные в списках
+# (кроме самой пачки внутри batch_gen, что необходимо по условию группировки).
+
+def source_gen(start, step):
+    """Бесконечная арифметическая прогрессия: start, start+step, ..."""
+    current = start
+    while True:
+        yield current
+        current += step
+def filter_gen(gen, predicate):
+    """Оставляет только элементы, удовлетворяющие predicate(x)."""
+    for item in gen:
+        if predicate(item):
+            yield item
+def map_gen(gen, func):
+    """Преобразует каждый элемент: func(x)."""
+    for item in gen:
+        yield func(item)
+def take_while_gen(gen, predicate):
+    """Выдаёт элементы, пока predicate(x) == True, затем завершает генерацию."""
+    for item in gen:
+        if not predicate(item):
+            break
+        yield item
+def batch_gen(gen, size):
+    """
+    Группирует поток в пачки длины size.
+    Последняя пачка может быть короче, если входной генератор закончится.
+    """
+    if size <= 0:
+        raise ValueError("size должен быть > 0")
+    batch = []
+    for item in gen:
+        batch.append(item)
+        if len(batch) == size:
+            yield batch
+            batch = []
+    # Для конечных генераторов важно не потерять остаток.
+    if batch:
+        yield batch
+def first_n_gen(gen, n):
+    """Служебный генератор: отдаёт только первые n элементов из gen."""
+    for i, item in enumerate(gen):
+        if i >= n:
+            break
+        yield item
+# Сборка пайплайна из условия
+pipeline = batch_gen(
+    filter_gen(
+        map_gen(source_gen(1, 1), lambda x: x ** 2),
+        lambda x: x % 3 == 0
+    ),
+    5
+)
+# Вывод первых 3 пачек
+print("Первые 3 пачки:")
+for pack in first_n_gen(pipeline, 3):
+    print(pack)
+# Ответ на вопрос 66:
+# Почему O(1) память?
+# Каждый генератор хранит только своё текущее состояние:
+# - текущий элемент/счётчик,
+# - ссылку на входной генератор,
+# - (для batch_gen) временный буфер фиксированного размера size.
+# Память не растёт с количеством уже обработанных элементов n.
+# Ответ на вопрос 67:
+# Что будет с памятью, если заменить генераторы на списки при n=10^9?
+# Придётся хранить огромные промежуточные коллекции целиком (до миллиардов элементов),
+# что потребует десятки гигабайт памяти и, как правило, приведёт к исчерпанию ОЗУ.
+# С генераторами память остаётся практически постоянной.
