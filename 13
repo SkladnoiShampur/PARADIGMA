@@ -1,0 +1,150 @@
+# ==================== Класс Person (уровень 1) ====================
+class Person:
+    def __init__(self, name, age):
+        """Конструктор Person"""
+        self.name = name
+        self.age = age
+        print("Person: __init__ вызван")
+    
+    def greet(self):
+        """Метод приветствия"""
+        print(f"Привет, я {self.name}")
+    
+    def info(self):
+        """Метод вывода информации"""
+        print(f"Имя: {self.name}, Возраст: {self.age}")
+    
+    def __str__(self):
+        """Переопределенный __str__ - добавляем свою часть, не дублируя родителя"""
+        return f"Person[{self.name}, {self.age}]"
+
+
+# ==================== Класс Employee (уровень 2) ====================
+class Employee(Person):
+    def __init__(self, name, age, company, salary):
+        """Конструктор Employee с использованием super()"""
+        super().__init__(name, age)  # Вызов конструктора Person
+        self.company = company
+        self.salary = salary
+        print("Employee: __init__ вызван")
+    
+    def work(self):
+        """Метод работы"""
+        print(f"{self.name} работает в компании {self.company}")
+    
+    def get_salary(self):
+        """Метод получения зарплаты"""
+        return self.salary
+    
+    def __str__(self):
+        """Переопределенный __str__ - добавляем свою часть, не дублируя родителя"""
+        return f"{super().__str__()} | Employee[{self.company}, {int(self.salary)}₽]"
+
+
+# ==================== Класс Manager (уровень 3) ====================
+class Manager(Employee):
+    def __init__(self, name, age, company, salary, department, team_size):
+        """Конструктор Manager с использованием super()"""
+        super().__init__(name, age, company, salary)  # Вызов конструктора Employee
+        self.department = department
+        self.team_size = team_size
+        print("Manager: __init__ вызван")
+    
+    def manage(self):
+        """Метод управления отделом"""
+        print(f"{self.name} управляет отделом {self.department}")
+    
+    def hire(self, employee_name):
+        """Метод найма сотрудников"""
+        print(f"{self.name} нанимает сотрудника {employee_name}")
+    
+    def __str__(self):
+        """Переопределенный __str__ - добавляем свою часть"""
+        return f"{super().__str__()} | Manager[{self.department}, {self.team_size}чел]"
+
+
+# ==================== Класс Director (уровень 4) ====================
+class Director(Manager):
+    def __init__(self, name, age, company, salary, department, team_size, budget):
+        """Конструктор Director с использованием super()"""
+        super().__init__(name, age, company, salary, department, team_size)  # Вызов конструктора Manager
+        self.budget = budget
+        print("Director: __init__ вызван")
+    
+    def approve_budget(self, amount):
+        """Метод утверждения бюджета"""
+        if amount <= self.budget:
+            print(f"Бюджет в размере {amount}₽ утвержден")
+            self.budget -= amount
+        else:
+            print(f"Отказ: недостаточно бюджета")
+    
+    def annual_report(self):
+        """Метод годового отчета"""
+        print(f"Годовой отчет: бюджет = {self.budget}₽, отдел = {self.department}")
+    
+    def __str__(self):
+        """Переопределенный __str__ - добавляем свою часть, показывая всю цепочку"""
+        return f"{super().__str__()} | Director[бюджет: {int(self.budget/1000000)}М]"
+
+
+# ==================== Главная часть для демонстрации ====================
+if __name__ == "__main__":
+    print("========== 1. Создание объекта Director ==========")
+    print("Порядок вызова __init__:")
+    director = Director("Иван", 45, "ТехноКорп", 300000, 
+                        "IT", 12, 5000000)
+    
+    print("\n========== Вызов методов каждого уровня ==========")
+    # Методы Person
+    director.greet()
+    director.info()
+    
+    # Методы Employee
+    director.work()
+    print(f"Зарплата: {director.get_salary()}₽")
+    
+    # Методы Manager
+    director.manage()
+    director.hire("Петр")
+    
+    # Методы Director
+    director.approve_budget(1000000)
+    director.annual_report()
+    
+    print("\n========== 2. Порядок вызова __init__ при создании Director ==========")
+    print("Порядок: Person → Employee → Manager → Director")
+    
+    print("\n========== 3. Переопределенный __str__ в каждом классе ==========")
+    print("Director.__str__():", director)
+    print("(Показывает всю цепочку наследования)")
+    
+    print("\n========== 4. Апкастинг: помещаем Director в переменную типа Employee ==========")
+    print("В Python переменная не имеет типа - это динамическая типизация!")
+    e = director  # Апкастинг концептуален - переменная не имеет фиксированного типа
+    print("Переменная e = director (тип не указан)")
+    print("В Python ДОСТУПНЫ все атрибуты, независимо от 'типа' переменной:")
+    print(f"e.budget: {e.budget}")  # Доступно!
+    print("e.approve_budget(500000):")
+    e.approve_budget(500000)  # Доступно!
+    print("Вывод: в Python апкастинг не ограничивает доступ к методам,")
+    print("в отличие от статических языков (Java/C++).")
+    
+    print("\n========== 5. Проверка isinstance() для каждого класса ==========")
+    print(f"isinstance(director, Person): {isinstance(director, Person)}")
+    print(f"isinstance(director, Employee): {isinstance(director, Employee)}")
+    print(f"isinstance(director, Manager): {isinstance(director, Manager)}")
+    print(f"isinstance(director, Director): {isinstance(director, Director)}")
+    print(f"isinstance(director, object): {isinstance(director, object)}")
+    
+    print("\n========== Вопрос 1: Порядок вызова __init__ ==========")
+    print("При использовании super().__init__() в каждом классе,")
+    print("порядок вызова: Person → Employee → Manager → Director")
+    print("(сначала инициализируется базовый класс, затем производный)")
+    
+    print("\n========== Вопрос 2: Что такое транзитивность наследования? ==========")
+    print("Транзитивность: если Director наследует Manager,")
+    print("а Manager наследует Employee, а Employee наследует Person,")
+    print("то Director наследует ВСЕ классы в цепочке.")
+    print("Поэтому Director является экземпляром Person, Employee, Manager и Director.")
+    print("Это свойство: наследование распространяется на всю иерархию.")
