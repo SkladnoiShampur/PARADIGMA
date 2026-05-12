@@ -1,0 +1,173 @@
+## Ошкодер Сергей Александрович НБИБд-01-24 10.05.2026 (1)
+# Реализуйте метакласс-валидатор для бизнес-моделей с автоматической проверкой типов.
+# Метакласс ValidatedMeta автоматически оборачивает __init__ любого класса так, что при создании объекта каждый атрибут проверяется по аннотации типа.
+# Дополнительно: добавьте поддержку кастомных валидаторов через __validators__ dic
+
+import types
+from typing import Any, Callable, Union, get_args, get_origin
+
+
+def _union_origin(origin):
+    if origin is Union:
+        return True
+    ut = getattr(types, "UnionType", None)
+    return ut is not None and origin is ut
+
+
+def _type_display(tp):
+    if tp is Any:
+        return "Any"
+    origin = get_origin(tp)
+    if origin is None:
+        return getattr(tp, "__name__", str(tp))
+    args = get_args(tp)
+    if _union_origin(origin):
+        return ", ".join(_type_display(a) for a in args)
+    return getattr(origin, "__name__", str(origin))
+
+
+def _strip_optional(annotation):
+    origin = get_origin(annotation)
+    args = get_args(annotation)
+    if _union_origin(origin):
+        non_none = [a for a in args if a is not type(None)]
+        allows_none = any(a is type(None) for a in args)
+        if len(non_none) == 1:
+            return non_none[0], allows_none
+        if len(non_none) == 0:
+            return Any, allows_none
+        return Union[tuple(non_none)], allows_none
+    return annotation, False
+
+
+def _value_matches_annotation(value, annotation):
+    if annotation is Any:
+        return True
+    inner, allows_none = _strip_optional(annotation)
+    if value is None:
+        return allows_none
+    origin = get_origin(inner)
+    if _union_origin(origin):
+        return any(_value_matches_annotation(value, a) for a in get_args(inner))
+    if origin is not None:
+        return isinstance(value, origin)
+    try:
+        return isinstance(value, inner)
+    except TypeError:
+        return True
+
+
+def _collect_annotations(cls):
+    merged = {}
+    for base in reversed(cls.__mro__):
+        if base is object:
+            continue
+        merged.update(base.__dict__.get("__annotations__", {}))
+    return merged
+
+
+def _collect_validators(cls):
+    merged = {}
+    for base in reversed(cls.__mro__):
+        if base is object:
+            continue
+        v = base.__dict__.get("__validators__")
+        if isinstance(v, dict):
+            merged.update(v)
+    return merged
+
+
+class ValidatedMeta(type):
+    def __new__(mcls, name, bases, namespace, **kwds):
+        cls = super().__new__(mcls, name, bases, namespace, **kwds)
+        user_init = namespace.get("__init__")
+
+        def _validate_one(owner_cls, field, value):
+            annotations = _collect_annotations(owner_cls)
+            if field not in annotations:
+                return
+            expected = annotations[field]
+            if not _value_matches_annotation(value, expected):
+                actual_name = type(value).__name__
+                raise TypeError(
+                    f"{field}: ожидался {_type_display(expected)}, получен {actual_name}"
+                )
+            validators = _collect_validators(owner_cls)
+            fn = validators.get(field)
+            if fn is not None and not fn(value):
+                raise ValueError(f"{field}: {value} не прошло валидацию")
+
+        def __setattr__(self, attr, value):
+            _validate_one(type(self), attr, value)
+            super(cls, self).__setattr__(attr, value)
+
+        def wrapped_init(self, *args, **kwargs):
+            ann = _collect_annotations(cls)
+            field_names = list(ann.keys())
+            if len(args) > len(field_names):
+                raise TypeError("Слишком много позиционных аргументов")
+            params = {}
+            for i, fname in enumerate(field_names):
+                if i < len(args):
+                    if fname in kwargs:
+                        raise TypeError(f"Поле {fname} задано и позиционно, и как ключ")
+                    params[fname] = args[i]
+            for k, v in kwargs.items():
+                if k in params:
+                    raise TypeError(f"Дублируется аргумент {k}")
+                params[k] = v
+            missing = [f for f in field_names if f not in params]
+            if missing:
+                raise TypeError("Не заданы обязательные поля: " + ", ".join(missing))
+            for fname, val in params.items():
+                if fname not in ann:
+                    raise TypeError(f"Неизвестное поле: {fname}")
+                _validate_one(cls, fname, val)
+            if user_init is not None:
+                user_init(self, *[params[f] for f in field_names])
+            else:
+                for fname, val in params.items():
+                    object.__setattr__(self, fname, val)
+
+        cls.__init__ = wrapped_init
+        cls.__setattr__ = __setattr__
+
+        def fields(subcls):
+            return dict(subcls.__dict__.get("__annotations__", {}))
+
+        cls.fields = classmethod(fields)
+        return cls
+
+
+class Product(metaclass=ValidatedMeta):
+    name: str
+    price: float
+    quantity: int
+    __validators__ = {
+        "price": lambda v: v > 0,
+        "quantity": lambda v: v >= 0,
+    }
+
+p = Product("Ноутбук", 80000.0, 10)
+print(Product.fields())
+
+# Задачи:
+# 1. Product('Ноутбук', 80000.0, 10) → создаётся корректно.
+# 2. Product('Ноутбук', -100.0, 10)  → ValueError: 'price: значение -100.0 не прошло валидацию'.
+#  Внимание: Product('Ноутбук', -100, 10) → TypeError (int не является float) — сначала проверяется тип.
+# 3. Product('Ноутбук', 80000.0, 'ten') → TypeError: 'quantity: ожидался int, получен str'.
+
+# Product("Ноутбук", -100.0, 10)
+# Product("Ноутбук", -100, 10)
+# Product("Ноутбук", 80000.0, "ten")
+
+# Теория
+# 1) Метакласс: при class C(...): тело класса превращается в namespace; вызывается
+#    M.__new__(mcls, name, bases, namespace) — создаётся объект-класс; затем
+#    M.__init__(cls, name, bases, namespace) — доинициализация. Через __new__
+#    можно подменить __init__, __setattr__ и т.д. до создания экземпляров.
+# 2) Декоратор класса получает уже готовый класс и возвращает его (или замену).
+#    Метакласс встраивается в создание типа и наследование. Декоратор проще
+#    для точечных правок; метакласс — для единообразия целого семейства типов.
+# 3) __init_subclass__: база получает вызов при объявлении подкласса; удобно
+#    для регистрации, но не заменяет полный контроль type.__new__ как метакласс.
